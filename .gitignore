@@ -1,0 +1,23 @@
+# Notes perso
+PLAN.md
+
+# Environnement
+.venv/
+.env
+
+# Base vectorielle
+data/chroma/
+
+# Caches Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
