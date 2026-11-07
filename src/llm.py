@@ -1,4 +1,4 @@
-"""Single interface to the project's LLMs: local Mistral 7B (Ollama) or Mistral Small (API)."""
+"""Single interface to the project's LLMs: local Mistral 7B (Ollama) or Gemma 4 31B (Google AI Studio API)."""
 
 import time
 from dataclasses import dataclass
@@ -6,8 +6,8 @@ from typing import Literal
 
 from dotenv import load_dotenv
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_mistralai import ChatMistralAI
 from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
@@ -35,7 +35,7 @@ def get_model(provider: Provider) -> BaseChatModel:
     """Create the chat model matching the provider.
 
     Args:
-        provider: "local" for Mistral 7B via Ollama, "api" for Mistral Small via the Mistral API.
+        provider: "local" for Mistral 7B via Ollama, "api" for Gemma 4 31B via the Google AI Studio API.
 
     Returns:
         A LangChain chat model configured with temperature 0.
@@ -44,7 +44,7 @@ def get_model(provider: Provider) -> BaseChatModel:
         ValueError: If the provider is unknown.
     """
     if provider == "api":
-        return ChatMistralAI(model="mistral-small-latest", temperature=0)
+        return ChatGoogleGenerativeAI(model="gemma-4-31b-it", temperature=0, thinking_level="minimal")
     elif provider == "local":
         return ChatOllama(model="mistral", temperature=0, num_ctx=4096)
     else:
@@ -66,7 +66,7 @@ def generate(provider: Provider, prompt: str) -> LLMResponse:
     message = model.invoke(prompt)
     end_time = time.perf_counter()
     latency = end_time - start_time
-    return LLMResponse(text=message.content,
+    return LLMResponse(text=message.text,
                        latency=latency,
                        input_tokens=message.usage_metadata["input_tokens"],
                        output_tokens=message.usage_metadata["output_tokens"])
