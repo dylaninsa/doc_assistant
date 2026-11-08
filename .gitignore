@@ -5,6 +5,9 @@ PLAN.md
 .venv/
 .env
 
+# PDF du corpus (droits des fabricants, re-téléchargeables via data/sources.md)
+data/pdfs/*.pdf
+
 # Base vectorielle
 data/chroma/
 
