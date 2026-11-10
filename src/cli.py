@@ -7,6 +7,7 @@ from typing import Literal
 import typer
 
 from src.ingest import get_collection, ingest_all
+from src.rag import answer_question
 from src.retriever import search as search_chunks
 
 app = typer.Typer(help="Technical documents assistant.")
@@ -56,6 +57,27 @@ def search(
         print(f"      {preview}")
 
 
+@app.command()
+def ask(
+    question: str,
+    config: str = typer.Option("local-rag", help="local-rag or api-rag."),
+) -> None:
+    """Answer a question from the documents, with citations."""
+    provider, _, mode = config.partition("-")
+    if provider not in ("local", "api") or mode != "rag":
+        raise typer.BadParameter("Available configs: local-rag, api-rag.")
+
+    result = answer_question(question, provider)
+    answer = result.answer
+    print(answer.answer)
+    for citation in answer.citations:
+        print(f"  [source: {citation.doc_id}, page {citation.page}]")
+    print(
+        f"(refusal: {result.refusal_reason} | confidence: {answer.confidence:.2f} | "
+        f"latency: {result.latency:.1f} s | tokens: {result.input_tokens} in / {result.output_tokens} out)"
+    )
+
+
 if __name__ == "__main__":
-    sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
+    sys.stdout.reconfigure(encoding="utf-8")
     app()

@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_ollama import ChatOllama
 from langchain_google_genai import ChatGoogleGenerativeAI
+from pydantic import BaseModel
+
 
 load_dotenv()
 
@@ -26,6 +28,24 @@ class LLMResponse:
     """
 
     text: str
+    latency: float
+    input_tokens: int
+    output_tokens: int
+
+
+@dataclass
+class StructuredResponse:
+    """Structured LLM output along with the measurements used by the benchmark.
+
+    Attributes:
+        parsed: The output validated against the requested schema, or None if the model
+            produced something that does not match it.
+        latency: Call duration, in seconds.
+        input_tokens: Number of tokens in the prompt.
+        output_tokens: Number of tokens in the response.
+    """
+
+    parsed: BaseModel | None
     latency: float
     input_tokens: int
     output_tokens: int
@@ -70,6 +90,31 @@ def generate(provider: Provider, prompt: str) -> LLMResponse:
                        latency=latency,
                        input_tokens=message.usage_metadata["input_tokens"],
                        output_tokens=message.usage_metadata["output_tokens"])
+
+
+def generate_structured(provider: Provider, prompt: str, schema: type[BaseModel]) -> StructuredResponse:
+    """Send a prompt and force the answer to follow a Pydantic schema.
+
+    Args:
+        provider: "local" or "api" (see get_model).
+        prompt: Text sent to the model.
+        schema: Pydantic class describing the expected output.
+
+    Returns:
+        The parsed output (None on a schema violation), the latency and the token counts.
+    """
+    model = get_model(provider).with_structured_output(schema, include_raw=True)
+    start_time = time.perf_counter()
+    result = model.invoke(prompt)
+    end_time = time.perf_counter()
+    latency = end_time - start_time
+    usage = result["raw"].usage_metadata or {}
+    return StructuredResponse(
+        parsed=result["parsed"],
+        latency=latency,
+        input_tokens=usage.get("input_tokens", 0),
+        output_tokens=usage.get("output_tokens", 0),
+    )
 
 
 if __name__ == "__main__":
