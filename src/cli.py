@@ -6,6 +6,8 @@ from typing import Literal
 
 import typer
 
+from evaluation.dataset import check_dataset, load_dataset
+
 from src.ingest import get_collection, ingest_all
 from src.rag import answer_question
 from src.retriever import search as search_chunks
@@ -76,6 +78,18 @@ def ask(
         f"(refusal: {result.refusal_reason} | confidence: {answer.confidence:.2f} | "
         f"latency: {result.latency:.1f} s | tokens: {result.input_tokens} in / {result.output_tokens} out)"
     )
+
+
+@app.command("check-eval")
+def check_eval() -> None:
+    """Load the evaluation set and report annotation problems."""
+    items = load_dataset()
+    counts = Counter(item.type for item in items)
+    print(f"{len(items)} questions: " + ", ".join(f"{count} {kind}" for kind, count in counts.items()))
+    problems = check_dataset(items)
+    for problem in problems:
+        print(f"  - {problem}")
+    print("Dataset OK" if not problems else f"{len(problems)} problem(s) found")
 
 
 if __name__ == "__main__":
