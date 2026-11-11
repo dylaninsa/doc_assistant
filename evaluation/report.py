@@ -23,7 +23,7 @@ CHART_PATH = Path("results/benchmark.png")
 MODEL_REFUSALS = {"model", "low_similarity", "invalid_output"}
 PRICES = {"api-rag": (0.14, 0.40)}
 COLORS = {"local-rag": "#2a78d6", "api-rag": "#eb6834"}
-INK, MUTED, GRID, SURFACE = "#52514e", "#898781", "#e1e0d9", "#fcfcfb"
+INK, GRID, SURFACE = "#52514e", "#e1e0d9", "#fcfcfb"
 TABLE_ROWS = [
     ("accuracy", "Exactitude", "{:.0%}"),
     ("accuracy_before_guardrail", "Exactitude sans le garde-fou de citations", "{:.0%}"),
