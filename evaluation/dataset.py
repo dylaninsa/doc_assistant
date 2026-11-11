@@ -20,6 +20,7 @@ class EvalItem(BaseModel):
     id: str
     question: str
     expected_answer: str
+    key_facts: list[str]
     gold_sources: list[Citation]
     type: QuestionType
     answerable: bool
@@ -58,6 +59,8 @@ def check_dataset(items: list[EvalItem]) -> list[str]:
 
         if item.answerable != bool(item.gold_sources):
             problems.append(f"{item.id}: answerable={item.answerable} but {len(item.gold_sources)} gold sources")
+        if item.answerable != bool(item.key_facts):
+            problems.append(f"{item.id}: answerable={item.answerable} but {len(item.key_facts)} key facts")
         if item.answerable == (item.type == "unanswerable"):
             problems.append(f"{item.id}: type {item.type} does not match answerable={item.answerable}")
         if (item.type == "extraction") != (item.expected_fields is not None):

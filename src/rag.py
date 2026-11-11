@@ -17,6 +17,7 @@ Rules:
 - Every fact in your answer must come from the context. Never use outside knowledge.
 - Cite every source you used with its doc_id and page, exactly as written in the [source: ...] headers.
 - If the context does not contain the answer, set is_answerable to false, answer "{refusal}" and leave citations empty.
+- You may do simple calculations with values from the context; show the calculation.
 - Copy numbers and units exactly as they appear in the context.
 - Answer in the language of the question.
 
@@ -37,6 +38,7 @@ class RAGResult:
         latency: LLM call duration in seconds (0 if the LLM was not called).
         input_tokens: Number of tokens in the prompt.
         output_tokens: Number of tokens in the response.
+        raw_answer: LLM output before the guardrails (None if the LLM was not called or its output was invalid).
     """
 
     answer: Answer
@@ -45,6 +47,7 @@ class RAGResult:
     latency: float = 0.0
     input_tokens: int = 0
     output_tokens: int = 0
+    raw_answer: Answer | None = None
 
 
 def refusal() -> Answer:
@@ -105,15 +108,15 @@ def answer_question(question: str, provider: Provider, k: int = TOP_K) -> RAGRes
         return RAGResult(answer=refusal(), retrieved=retrieved, refusal_reason="low_similarity")
 
     prompt = PROMPT_TEMPLATE.format(context=format_context(retrieved), question=question, refusal=REFUSAL_TEXT)
-    reponse = generate_structured(provider, prompt, Answer)
-    measures = {"latency": reponse.latency, "input_tokens": reponse.input_tokens, "output_tokens": reponse.output_tokens}
+    response = generate_structured(provider, prompt, Answer)
+    measures = {"latency": response.latency, "input_tokens": response.input_tokens, "output_tokens": response.output_tokens}
 
-    if reponse.parsed is None:
+    if response.parsed is None:
         return RAGResult(answer=refusal(), retrieved=retrieved, refusal_reason="invalid_output", **measures)
 
-    answer = validate_citations(reponse.parsed, retrieved)
+    answer = validate_citations(response.parsed, retrieved)
     if not answer.is_answerable:
-        return RAGResult(answer=answer, retrieved=retrieved, refusal_reason="model", **measures)
+        return RAGResult(answer=answer, retrieved=retrieved, refusal_reason="model", raw_answer=response.parsed, **measures)
     if not answer.citations:
-        return RAGResult(answer=refusal(), retrieved=retrieved, refusal_reason="no_valid_citation", **measures)
-    return RAGResult(answer=answer, retrieved=retrieved, refusal_reason=None, **measures)
+        return RAGResult(answer=refusal(), retrieved=retrieved, refusal_reason="no_valid_citation", raw_answer=response.parsed, **measures)
+    return RAGResult(answer=answer, retrieved=retrieved, refusal_reason=None, raw_answer=response.parsed, **measures)

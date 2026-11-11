@@ -7,6 +7,8 @@ from typing import Literal
 import typer
 
 from evaluation.dataset import check_dataset, load_dataset
+from evaluation.run_benchmark import CONFIGS, run_benchmark
+from evaluation.report import build_report
 
 from src.ingest import get_collection, ingest_all
 from src.rag import answer_question
@@ -90,6 +92,23 @@ def check_eval() -> None:
     for problem in problems:
         print(f"  - {problem}")
     print("Dataset OK" if not problems else f"{len(problems)} problem(s) found")
+
+
+@app.command()
+def benchmark(
+    config: list[str] = typer.Option(list(CONFIGS), help="Configuration to run; repeat the option for several."),
+) -> None:
+    """Run the evaluation set and append the results to results/benchmark.csv (resumes if interrupted)."""
+    unknown = [name for name in config if name not in CONFIGS]
+    if unknown:
+        raise typer.BadParameter(f"Unknown configs: {unknown}. Available: {list(CONFIGS)}.")
+    run_benchmark(config)
+
+
+@app.command()
+def report() -> None:
+    """Score results/benchmark.csv and write results/report.md and results/benchmark.png."""
+    print(build_report())
 
 
 if __name__ == "__main__":
